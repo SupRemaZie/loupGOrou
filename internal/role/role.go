@@ -1,8 +1,13 @@
 package role
 
+type AttackTarget interface {
+	Die()
+}
+
 type Role interface {
 	Name() string
 	Faction() string
 	CanAct() bool
-	NightActions() error
+	NightAction(target AttackTarget) error
+	ResetNight()
 }
