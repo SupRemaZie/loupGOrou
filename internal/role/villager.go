@@ -10,7 +10,8 @@ func NewVillager() Villager {
 func (v Villager) Name() string    { return "Villageois" }
 func (v Villager) Faction() string { return "civil" }
 func (v Villager) CanAct() bool    { return false }
-func (v Villager) NightAction(target AttackTarget) error {
-	return nil
+func (v Villager) ResetNight()     {}
+
+func (v Villager) String() string {
+	return "👨‍🌾 " + v.Name()
 }
-func (v Villager) ResetNight() {}

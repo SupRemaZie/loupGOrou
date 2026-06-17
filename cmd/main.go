@@ -3,18 +3,24 @@ package main
 import (
 	"fmt"
 
-	"github.com/SupRemaZie/loupGOrou/internal/application"
-	"github.com/SupRemaZie/loupGOrou/internal/player"
-	"github.com/SupRemaZie/loupGOrou/internal/role"
+	"github.com/SupRemaZie/loupGOrou/internal/console"
+	"github.com/SupRemaZie/loupGOrou/internal/game"
 )
 
 func main() {
-	player1 := player.NewPlayer("1", "Alice", role.NewWerewolf())
-	player2 := player.NewPlayer("2", "Bob", role.NewVillager())
-	player3 := player.NewPlayer("3", "Charlie", role.NewVillager())
+	fmt.Println("Bienvenue dans le jeu du Loup Garou !")
 
-	players := []*player.Player{player1, player2, player3}
-	game := application.NewGame("game-1", players)
+	fmt.Println("Entrez le nombre de joueurs :")
+	nbPlayers := console.ReadInt()
+	fmt.Println("Entrez le nombre de loups :")
+	nbWerewolves := console.ReadInt()
 
-	fmt.Printf("Game created: %s, phase=%s, players=%d\n", game.ID, game.Phase, len(game.Players))
+	g := game.NewGame()
+	if err := g.Start(nbPlayers, nbWerewolves); err != nil {
+		fmt.Println("Erreur :", err)
+		return
+	}
+	for i, p := range g.Players {
+		fmt.Printf("Joueur %d : %s, Rôle : %s, Faction : %s\n", i+1, p.Name, p.Role.String(), p.Role.Faction())
+	}
 }
