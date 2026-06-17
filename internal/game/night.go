@@ -20,34 +20,49 @@ func newNightPhase(alivePlayers []*player.Player) *nightPhase {
 func (np *nightPhase) start() []*player.Player {
 	fmt.Println("\n🌙 La nuit tombe sur le village...")
 
-	wolves := faction(np.alivePlayers, "Loup")
-	if len(wolves) == 0 {
-		return nil
+	ctx := &nightContext{
+		alive:   np.alivePlayers,
+		pending: make(map[*player.Player]bool),
 	}
 
-	prey := otherFactions(wolves[0], np.alivePlayers)
-
-	votes := make(map[*player.Player]int)
-	for _, wolf := range wolves {
-		if !wolf.IsAlive || !wolf.Role.CanAct() {
-			continue
-		}
-		fmt.Printf("\n%s se réveille (%s).\n", wolf.Name, wolf.Role.Name())
-		if target := promptTarget(wolf, prey); target != nil {
-			votes[target]++
-		}
+	for _, action := range buildNightActions(np.alivePlayers) {
+		action.Resolve(ctx)
 	}
 
 	for _, p := range np.alivePlayers {
 		p.Role.ResetNight()
 	}
 
-	victim := pickVictim(votes)
-	if victim == nil {
-		return nil
+	victims := ctx.victims()
+	for _, v := range victims {
+		v.Die()
 	}
-	victim.Die()
-	return []*player.Player{victim}
+	return victims
+}
+
+type nightContext struct {
+	alive   []*player.Player
+	pending map[*player.Player]bool
+}
+
+func (c *nightContext) kill(p *player.Player) {
+	if p != nil {
+		c.pending[p] = true
+	}
+}
+
+func (c *nightContext) save(p *player.Player) {
+	delete(c.pending, p)
+}
+
+func (c *nightContext) victims() []*player.Player {
+	var res []*player.Player
+	for _, p := range c.alive {
+		if c.pending[p] {
+			res = append(res, p)
+		}
+	}
+	return res
 }
 
 func pickVictim(votes map[*player.Player]int) *player.Player {

@@ -41,7 +41,19 @@ func (g *Game) Start(nbPlayers int, nbWerewolves int) error {
 	for i := 0; i < g.NbWerewolf; i++ {
 		g.Players[i].Role = role.NewWerewolf()
 	}
-	for i := g.NbWerewolf; i < len(g.Players); i++ {
+
+	// Rôles spéciaux du village, attribués si l'effectif le permet.
+	next := g.NbWerewolf
+	if next < len(g.Players) {
+		g.Players[next].Role = role.NewSeer()
+		next++
+	}
+	if next < len(g.Players) {
+		g.Players[next].Role = role.NewWitch()
+		next++
+	}
+
+	for i := next; i < len(g.Players); i++ {
 		g.Players[i].Role = role.NewVillager()
 	}
 
