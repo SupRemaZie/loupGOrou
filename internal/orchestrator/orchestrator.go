@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"os"
@@ -36,7 +37,7 @@ func ollamaModel() string {
 	if m := os.Getenv("OLLAMA_MODEL"); m != "" {
 		return m
 	}
-	return "llama3.1"
+	return "nemotron-3-super:cloud"
 }
 
 // --- Types pour l'API native Ollama (/api/chat) ---
@@ -206,7 +207,8 @@ func decide(
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("ollama returned status %d", resp.StatusCode)
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("ollama status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	var ollamaResp ollamaResponse

@@ -16,7 +16,7 @@ func main() {
 	}
 	model := os.Getenv("OLLAMA_MODEL")
 	if model == "" {
-		model = "llama3.1"
+		model = "nemotron-3-super:cloud"
 	}
 	fmt.Printf("Ollama: %s — modèle: %s\n", host, model)
 
