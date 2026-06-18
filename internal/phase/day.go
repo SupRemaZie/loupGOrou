@@ -1,8 +1,9 @@
-package game
+package phase
 
 import (
 	"fmt"
 
+	"github.com/SupRemaZie/loupGOrou/internal/action"
 	"github.com/SupRemaZie/loupGOrou/internal/player"
 )
 
@@ -10,13 +11,13 @@ type dayPhase struct {
 	alivePlayers []*player.Player
 }
 
-func newDayPhase(alivePlayers []*player.Player) *dayPhase {
+func NewDayPhase(alivePlayers []*player.Player) *dayPhase {
 	return &dayPhase{
 		alivePlayers: alivePlayers,
 	}
 }
 
-func (dp *dayPhase) start() *player.Player {
+func (dp *dayPhase) Start() *player.Player {
 	fmt.Println("\n☀️ Le jour se lève. Le village doit voter pour un suspect.")
 
 	votes := make(map[*player.Player]int)
@@ -25,7 +26,7 @@ func (dp *dayPhase) start() *player.Player {
 			continue
 		}
 		fmt.Printf("\n%s, à qui voulez-vous donner votre voix ?\n", voter.Name)
-		if target := promptTarget(voter, dp.alivePlayers); target != nil {
+		if target := action.PromptTarget(voter, dp.alivePlayers); target != nil {
 			votes[target]++
 		}
 	}

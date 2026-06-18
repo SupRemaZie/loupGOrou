@@ -1,7 +1,8 @@
-package game
+package action
 
 import (
 	"fmt"
+	"math/rand"
 	"sort"
 	"strings"
 
@@ -10,12 +11,19 @@ import (
 	"github.com/SupRemaZie/loupGOrou/internal/role"
 )
 
-type NightAction interface {
-	Priority() int
-	Resolve(ctx *nightContext)
+type NightContext interface {
+	Kill(p *player.Player)
+	Save(p *player.Player)
+	Victims() []*player.Player
+	GetAlive() []*player.Player
 }
 
-func buildNightActions(alive []*player.Player) []NightAction {
+type NightAction interface {
+	Priority() int
+	Resolve(ctx NightContext)
+}
+
+func BuildNightActions(alive []*player.Player) []NightAction {
 	var actions []NightAction
 
 	if wolves := faction(alive, "Loup"); len(wolves) > 0 {
@@ -37,16 +45,36 @@ func buildNightActions(alive []*player.Player) []NightAction {
 	return actions
 }
 
+func pickVictim(votes map[*player.Player]int) *player.Player {
+	maxVotes := 0
+	for _, count := range votes {
+		if count > maxVotes {
+			maxVotes = count
+		}
+	}
+	if maxVotes == 0 {
+		return nil
+	}
+
+	var top []*player.Player
+	for p, count := range votes {
+		if count == maxVotes {
+			top = append(top, p)
+		}
+	}
+	return top[rand.Intn(len(top))]
+}
+
 type seerAction struct{ self *player.Player }
 
 func (a *seerAction) Priority() int { return 10 }
 
-func (a *seerAction) Resolve(ctx *nightContext) {
+func (a *seerAction) Resolve(ctx NightContext) {
 	if !a.self.IsAlive {
 		return
 	}
 	fmt.Printf("\n%s se réveille (Voyante).\n", a.self.Name)
-	if target := promptTarget(a.self, ctx.alive); target != nil {
+	if target := PromptTarget(a.self, ctx.GetAlive()); target != nil {
 		fmt.Printf("🔮 %s est : %s\n", target.Name, target.Role.Name())
 	}
 }
@@ -55,8 +83,8 @@ type wolfPackAction struct{ wolves []*player.Player }
 
 func (a *wolfPackAction) Priority() int { return 20 }
 
-func (a *wolfPackAction) Resolve(ctx *nightContext) {
-	prey := otherFactions(a.wolves[0], ctx.alive)
+func (a *wolfPackAction) Resolve(ctx NightContext) {
+	prey := otherFactions(a.wolves[0], ctx.GetAlive())
 
 	votes := make(map[*player.Player]int)
 	for _, wolf := range a.wolves {
@@ -64,18 +92,18 @@ func (a *wolfPackAction) Resolve(ctx *nightContext) {
 			continue
 		}
 		fmt.Printf("\n%s se réveille (%s).\n", wolf.Name, wolf.Role.Name())
-		if target := promptTarget(wolf, prey); target != nil {
+		if target := PromptTarget(wolf, prey); target != nil {
 			votes[target]++
 		}
 	}
-	ctx.kill(pickVictim(votes))
+	ctx.Kill(pickVictim(votes))
 }
 
 type witchAction struct{ self *player.Player }
 
 func (a *witchAction) Priority() int { return 30 }
 
-func (a *witchAction) Resolve(ctx *nightContext) {
+func (a *witchAction) Resolve(ctx NightContext) {
 	if !a.self.IsAlive {
 		return
 	}
@@ -86,11 +114,11 @@ func (a *witchAction) Resolve(ctx *nightContext) {
 	fmt.Printf("\n%s se réveille (Sorcière).\n", a.self.Name)
 
 	if witch.HasHeal() {
-		if victims := ctx.victims(); len(victims) > 0 {
+		if victims := ctx.Victims(); len(victims) > 0 {
 			v := victims[0]
 			fmt.Printf("Cette nuit, %s va mourir. Le sauver ? (o/n) : ", v.Name)
 			if askYesNo() {
-				ctx.save(v)
+				ctx.Save(v)
 				witch.UseHeal()
 			}
 		}
@@ -99,8 +127,8 @@ func (a *witchAction) Resolve(ctx *nightContext) {
 	if witch.HasPoison() {
 		fmt.Print("Empoisonner quelqu'un ? (o/n) : ")
 		if askYesNo() {
-			if target := promptTarget(a.self, ctx.alive); target != nil {
-				ctx.kill(target)
+			if target := PromptTarget(a.self, ctx.GetAlive()); target != nil {
+				ctx.Kill(target)
 				witch.UsePoison()
 			}
 		}
