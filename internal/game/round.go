@@ -20,7 +20,7 @@ func newRound(alivePlayers []*player.Player) *round {
 func (r *round) start() {
 	night := phase.NewNightPhase(r.alivePlayers)
 	for _, victim := range night.Start() {
-		fmt.Printf("Cette nuit, %s a été dévoré...\n", victim.Name)
+		fmt.Printf("Cette nuit, %s a été tué...\n", victim.Name)
 	}
 
 	day := phase.NewDayPhase(alive(r.alivePlayers))
