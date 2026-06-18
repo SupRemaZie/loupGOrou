@@ -19,12 +19,13 @@ const (
 )
 
 type GameState struct {
-	ID      string        `json:"id"`
-	Round   int           `json:"round"`
-	Phase   Phase         `json:"phase"`
-	Players []PlayerState `json:"players"`
-	Victim  string        `json:"victim,omitempty"`  // victime des loups en attente (entre PhaseNight et PhaseNightWitch)
-	Result  string        `json:"result,omitempty"`  // vide = en cours, "Villageois" ou "Loups"
+	ID               string        `json:"id"`
+	Round            int           `json:"round"`
+	Phase            Phase         `json:"phase"`
+	Players          []PlayerState `json:"players"`
+	Victim           string        `json:"victim,omitempty"`
+	Result           string        `json:"result,omitempty"`
+	SeerInvestigated []string      `json:"seer_investigated,omitempty"`
 }
 
 type EventKind string

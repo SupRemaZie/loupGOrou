@@ -296,20 +296,19 @@ func parseToolCall(tc ollamaToolCall, pending []engine.RequiredDecision) (engine
 }
 
 func buildSystem(state engine.GameState) string {
-	var parts []string
+	var names []string
 	for _, p := range state.Players {
 		if p.IsAlive {
-			parts = append(parts, fmt.Sprintf("%s (%s)", p.Name, p.Role))
+			names = append(names, p.Name)
 		}
 	}
 	return fmt.Sprintf(
 		"Tu es le maître du jeu Loup-Garou, partie %s. "+
-			"Tu joues TOUS les rôles simultanément. Joueurs en vie: %s. "+
-			"Joue stratégiquement: loups coordonnent pour tuer le joueur le plus dangereux, "+
-			"la voyante enquête sur les suspects, la sorcière gère ses potions avec sagesse, "+
-			"le village vote pour éliminer les loups. "+
+			"Tu joues chaque rôle selon sa connaissance propre : les loups connaissent uniquement leurs alliés, "+
+			"le village vote sans savoir qui sont les loups. "+
+			"Joueurs en vie: %s. "+
 			"Appelle TOUS les outils obligatoires pour avancer la partie.",
-		state.ID, strings.Join(parts, ", "))
+		state.ID, strings.Join(names, ", "))
 }
 
 func buildUserMsg(state engine.GameState, pending []engine.RequiredDecision, history []engine.Event) string {

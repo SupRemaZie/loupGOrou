@@ -51,11 +51,14 @@ func computeRequired(players []*player.Player, state GameState) []RequiredDecisi
 			})
 		}
 		if seer := findByRole(alive, "Voyante"); seer != nil {
-			req = append(req, RequiredDecision{
-				Kind:       DecisionSeerInvestigate,
-				ActorID:    seer.Name,
-				Candidates: toPublicStates(filterOut(alive, seer)),
-			})
+			candidates := filterNotInvestigated(filterOut(alive, seer), state.SeerInvestigated)
+			if len(candidates) > 0 {
+				req = append(req, RequiredDecision{
+					Kind:       DecisionSeerInvestigate,
+					ActorID:    seer.Name,
+					Candidates: toPublicStates(candidates),
+				})
+			}
 		}
 
 	case PhaseNightWitch:
@@ -123,9 +126,11 @@ func executeNight(state GameState, players []*player.Player, decisions []Decisio
 	}
 
 	// Enquête de la voyante
+	newInvestigated := state.SeerInvestigated
 	if seer := findByRole(alive, "Voyante"); seer != nil {
 		if d := findDecision(decisions, DecisionSeerInvestigate, seer.Name); d != nil && d.TargetID != "" {
 			if target := findPlayer(alive, d.TargetID); target != nil {
+				newInvestigated = append(append([]string{}, newInvestigated...), target.Name)
 				events = append(events, Event{
 					Kind:     EventRevealed,
 					PlayerID: target.Name,
@@ -140,6 +145,7 @@ func executeNight(state GameState, players []*player.Player, decisions []Decisio
 		if w, ok := witch.Role.(*role.Witch); ok && w.CanAct() {
 			next := dehydrate(state.ID, players, state.Round, PhaseNightWitch)
 			next.Victim = victimID
+			next.SeerInvestigated = newInvestigated
 			return events, next
 		}
 	}
@@ -151,6 +157,7 @@ func executeNight(state GameState, players []*player.Player, decisions []Decisio
 	}
 	next := dehydrate(state.ID, players, state.Round, PhaseDay)
 	next.Result = checkResult(alivePlayers(players))
+	next.SeerInvestigated = newInvestigated
 	return events, next
 }
 
@@ -198,6 +205,7 @@ func executeNightWitch(state GameState, players []*player.Player, decisions []De
 
 	next := dehydrate(state.ID, players, state.Round, PhaseDay)
 	next.Result = checkResult(alivePlayers(players))
+	next.SeerInvestigated = state.SeerInvestigated
 	return events, next
 }
 
@@ -227,6 +235,7 @@ func executeDay(state GameState, players []*player.Player, decisions []Decision)
 
 	next := dehydrate(state.ID, players, state.Round+1, PhaseNight)
 	next.Result = checkResult(alivePlayers(players))
+	next.SeerInvestigated = state.SeerInvestigated
 	return events, next
 }
 
@@ -270,6 +279,20 @@ func pickByVotes(votes map[*player.Player]int) *player.Player {
 		return nil // égalité = personne n'est éliminé
 	}
 	return top[rand.Intn(len(top))]
+}
+
+func filterNotInvestigated(players []*player.Player, investigated []string) []*player.Player {
+	set := make(map[string]bool, len(investigated))
+	for _, id := range investigated {
+		set[id] = true
+	}
+	var res []*player.Player
+	for _, p := range players {
+		if !set[p.Name] {
+			res = append(res, p)
+		}
+	}
+	return res
 }
 
 func filterFaction(players []*player.Player, faction string) []*player.Player {
